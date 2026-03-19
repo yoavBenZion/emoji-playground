@@ -24,36 +24,30 @@ export function generateFrames(
 
     switch (style) {
       case 'party': {
-        // Draw to temp canvas for wave distortion
-        const tmp = document.createElement('canvas');
-        tmp.width = SIZE;
-        tmp.height = SIZE;
-        const tCtx = tmp.getContext('2d')!;
-        drawCentered(tCtx, img);
+        // Party parrot: SHEAR (bottom planted) + squash-and-stretch + snappy timing.
+        // cbrt(sin): rushes quickly through the upright position, dwells at the lean extremes.
+        // Shear (not rotation): bottom pixel row never moves, only the top sweeps left/right.
+        // Squash: peaks when upright (between leans), eases off at the lean extremes — matches
+        // the original party parrot's weight-shift bob: down+squash at center, up+lean at sides.
+        const phase     = t * Math.PI * 2;
+        const sway      = Math.cbrt(Math.sin(phase)); // snappy: quick through center, dwells at lean
+        const atExtreme = Math.abs(sway);             // 0 = upright (center), 1 = fully leaned
 
-        const src = tCtx.getImageData(0, 0, SIZE, SIZE);
-        const dst = ctx.createImageData(SIZE, SIZE);
-        const amp = SIZE * 0.08;
-        const phase = t * Math.PI * 2;
+        const shear   = -sway * 0.33;                // top sweeps in lean direction
+        const squishY = 0.68 + 0.26 * atExtreme;    // squashed (0.68) upright → less squashed (0.94) leaned
+        const squishX = 1.10 - 0.10 * atExtreme;    // wider (1.10) upright → normal (1.00) leaned
 
-        for (let x = 0; x < SIZE; x++) {
-          const offsetY = Math.round(Math.sin((x / SIZE) * Math.PI * 4 + phase) * amp);
-          for (let y = 0; y < SIZE; y++) {
-            const sy = y - offsetY;
-            if (sy < 0 || sy >= SIZE) continue;
-            const si = (sy * SIZE + x) * 4;
-            const di = (y * SIZE + x) * 4;
-            dst.data[di] = src.data[si];
-            dst.data[di + 1] = src.data[si + 1];
-            dst.data[di + 2] = src.data[si + 2];
-            dst.data[di + 3] = src.data[si + 3];
-          }
-        }
-        ctx.putImageData(dst, 0, 0);
+        ctx.save();
+        ctx.translate(SIZE / 2, SIZE);             // origin locked at bottom-centre — NEVER moves
+        ctx.scale(squishX, squishY);               // squish/stretch from the bottom up
+        ctx.transform(1, 0, shear, 1, 0, 0);      // horizontal shear in local coords (bottom=0 stays put)
+        ctx.translate(-SIZE / 2, -SIZE);
+        drawCentered(ctx, img);
+        ctx.restore();
 
-        // Rainbow overlay (only on opaque pixels)
+        // Rainbow overlay on opaque pixels only
         ctx.globalCompositeOperation = 'source-atop';
-        ctx.fillStyle = `hsla(${t * 360}, 100%, 55%, 0.45)`;
+        ctx.fillStyle = `hsla(${t * 360}, 100%, 55%, 0.5)`;
         ctx.fillRect(0, 0, SIZE, SIZE);
         ctx.globalCompositeOperation = 'source-over';
         break;
