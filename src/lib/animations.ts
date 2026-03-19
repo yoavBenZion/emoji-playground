@@ -24,26 +24,32 @@ export function generateFrames(
 
     switch (style) {
       case 'party': {
-        // Party parrot: SHEAR (bottom planted) + squash-and-stretch + snappy timing.
-        // cbrt(sin): rushes quickly through the upright position, dwells at the lean extremes.
-        // Shear (not rotation): bottom pixel row never moves, only the top sweeps left/right.
-        // Squash: peaks when upright (between leans), eases off at the lean extremes — matches
-        // the original party parrot's weight-shift bob: down+squash at center, up+lean at sides.
-        const phase     = t * Math.PI * 2;
-        const sway      = Math.cbrt(Math.sin(phase)); // snappy: quick through center, dwells at lean
-        const atExtreme = Math.abs(sway);             // 0 = upright (center), 1 = fully leaned
+        // Party parrot: bottom-anchored shear + cos-phase squash, verified against reference GIFs.
+        //
+        // Shear:  sway*cbrt(sin) — top sweeps left/right, IMAGE BOTTOM stays fixed horizontally.
+        //         Positive sway → top goes left (matches reference). cbrt = snappy lean timing.
+        // Squash: cos(phase) — TALL at t=0, most SQUASHED at t=0.5 (between the two leans).
+        //         Squash and lean are 90° out of phase.
+        // Pivot:  62% down the image — both top and bottom move, but bottom barely shifts
+        //         (matches measured reference: top drops ~10px, bottom rises ~6px at max squash).
+        //
+        // Single setTransform call replicates party-ify's matrix exactly:
+        //   x' = x + shear*(y - imgBottom)   ← bottom-fixed shear
+        //   y' = squishY*y + bob              ← scale from top + downward translation
+        const phase   = t * Math.PI * 2;
+        const sway    = Math.cbrt(Math.sin(phase));
+        const squishY = 0.87 + 0.13 * Math.cos(phase);  // 1.0 at t=0, 0.74 at t=0.5
+        const shear   = sway * 0.20;                     // positive sway → top goes left
 
-        const shear   = -sway * 0.33;                // top sweeps in lean direction
-        const squishY = 0.68 + 0.26 * atExtreme;    // squashed (0.68) upright → less squashed (0.94) leaned
-        const squishX = 1.10 - 0.10 * atExtreme;    // wider (1.10) upright → normal (1.00) leaned
+        const imgScale  = Math.min(SIZE / img.naturalWidth, SIZE / img.naturalHeight);
+        const imgH      = img.naturalHeight * imgScale;
+        const imgTop    = (SIZE - imgH) / 2;
+        const imgBottom = imgTop + imgH;
+        const bob       = imgBottom * (1 - squishY);     // bottom-anchored: base stays at fixed Y
 
-        ctx.save();
-        ctx.translate(SIZE / 2, SIZE);             // origin locked at bottom-centre — NEVER moves
-        ctx.scale(squishX, squishY);               // squish/stretch from the bottom up
-        ctx.transform(1, 0, shear, 1, 0, 0);      // horizontal shear in local coords (bottom=0 stays put)
-        ctx.translate(-SIZE / 2, -SIZE);
+        ctx.setTransform(1, 0, shear, squishY, -shear * imgBottom, bob);
         drawCentered(ctx, img);
-        ctx.restore();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
 
         // Rainbow overlay on opaque pixels only
         ctx.globalCompositeOperation = 'source-atop';
