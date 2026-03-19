@@ -8,7 +8,7 @@ import Preview from './components/Preview';
 import { generateFrames } from './lib/animations';
 import { encodeGif, formatBytes } from './lib/gifEncoder';
 
-const FLOATING_EMOJIS = ['🎉', '🌀', '🏀', '📳', '💓', '🎊', '✨', '🔥', '💜', '🎈'];
+const FLOATING_EMOJIS = ['✨', '🌀', '🏀', '📳', '💓', '🎊', '✨', '🔥', '💜', '🎈'];
 
 const STEPS = [
   { icon: '🖼️', label: 'Upload', desc: 'Any PNG, JPG or WebP. Remove the background with one click.' },
@@ -86,7 +86,7 @@ export default function App() {
       <header className="relative z-10 px-6 pt-6 pb-0">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xl">🎉</span>
+            <span className="text-xl">✨</span>
             <span className="font-bold text-white tracking-tight">emoji playground</span>
           </div>
           <a
@@ -105,7 +105,7 @@ export default function App() {
         {/* Hero */}
         <section className="text-center pt-12 pb-2">
           <div className="text-6xl mb-5" style={{ filter: 'drop-shadow(0 0 24px rgba(139,92,246,0.5))' }}>
-            🎉
+            ✨
           </div>
           <h1 className="text-4xl font-bold text-white tracking-tight mb-3">
             Make your Slack emojis{' '}
