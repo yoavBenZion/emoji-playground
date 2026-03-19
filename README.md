@@ -1,73 +1,49 @@
-# React + TypeScript + Vite
+# 🎉 Emoji Playground
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Turn any image into a fun animated Slack emoji — right in your browser.
 
-Currently, two official plugins are available:
+**[emoji-playground.yoavbenzion.github.io](https://yoavbenzion.github.io/emoji-playground/)**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- **5 animation styles** — Party (rainbow wave), Spin, Bounce, Shake, Pulse
+- **Background removal** — strip the background in-browser, no external tools needed
+- **Speed control** — Turbo to Glacial frame delay presets
+- **Frame count** — 8 to 24 frames for smoothness vs. file size trade-off
+- **Auto-sized to 128×128px** — Slack's emoji format, ready to upload
+- **File size warning** — flags anything over 100 KB before you download
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Everything runs client-side. No uploads, no accounts, no API keys.
 
-## Expanding the ESLint configuration
+## Usage
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1. Upload an image (PNG, JPG, GIF, WebP)
+2. Optionally remove the background with one click
+3. Pick an animation style and dial in speed + frame count
+4. Hit **Generate GIF** and download
+5. In Slack: **Customize → Emoji → Add Emoji** → upload the file
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Local Development
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+nvm use        # requires Node via nvm
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Deploy
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run deploy  # builds and pushes to gh-pages branch
 ```
+
+## Stack
+
+- Vite + React + TypeScript
+- Tailwind CSS v4
+- [`@imgly/background-removal`](https://github.com/imgly/background-removal-js) — in-browser ML background removal
+- [`gifenc`](https://github.com/mattdesl/gifenc) — fast GIF encoding
+
+## Inspired by
+
+[party-ify](https://github.com/nathanielw/party-ify) — rebuilt from scratch with more styles, bg removal, and a cleaner UI.
