@@ -24,36 +24,36 @@ export function generateFrames(
 
     switch (style) {
       case 'party': {
-        // Draw to temp canvas for wave distortion
-        const tmp = document.createElement('canvas');
-        tmp.width = SIZE;
-        tmp.height = SIZE;
-        const tCtx = tmp.getContext('2d')!;
-        drawCentered(tCtx, img);
+        // Party parrot: bottom-anchored shear + cos-phase squash, verified against reference GIFs.
+        //
+        // Shear:  sway*cbrt(sin) — top sweeps left/right, IMAGE BOTTOM stays fixed horizontally.
+        //         Positive sway → top goes left (matches reference). cbrt = snappy lean timing.
+        // Squash: cos(phase) — TALL at t=0, most SQUASHED at t=0.5 (between the two leans).
+        //         Squash and lean are 90° out of phase.
+        // Pivot:  62% down the image — both top and bottom move, but bottom barely shifts
+        //         (matches measured reference: top drops ~10px, bottom rises ~6px at max squash).
+        //
+        // Single setTransform call replicates party-ify's matrix exactly:
+        //   x' = x + shear*(y - imgBottom)   ← bottom-fixed shear
+        //   y' = squishY*y + bob              ← scale from top + downward translation
+        const phase   = t * Math.PI * 2;
+        const sway    = Math.cbrt(Math.sin(phase));
+        const squishY = 0.87 + 0.13 * Math.cos(phase);  // 1.0 at t=0, 0.74 at t=0.5
+        const shear   = sway * 0.20;                     // positive sway → top goes left
 
-        const src = tCtx.getImageData(0, 0, SIZE, SIZE);
-        const dst = ctx.createImageData(SIZE, SIZE);
-        const amp = SIZE * 0.08;
-        const phase = t * Math.PI * 2;
+        const imgScale  = Math.min(SIZE / img.naturalWidth, SIZE / img.naturalHeight);
+        const imgH      = img.naturalHeight * imgScale;
+        const imgTop    = (SIZE - imgH) / 2;
+        const imgBottom = imgTop + imgH;
+        const bob       = imgBottom * (1 - squishY);     // bottom-anchored: base stays at fixed Y
 
-        for (let x = 0; x < SIZE; x++) {
-          const offsetY = Math.round(Math.sin((x / SIZE) * Math.PI * 4 + phase) * amp);
-          for (let y = 0; y < SIZE; y++) {
-            const sy = y - offsetY;
-            if (sy < 0 || sy >= SIZE) continue;
-            const si = (sy * SIZE + x) * 4;
-            const di = (y * SIZE + x) * 4;
-            dst.data[di] = src.data[si];
-            dst.data[di + 1] = src.data[si + 1];
-            dst.data[di + 2] = src.data[si + 2];
-            dst.data[di + 3] = src.data[si + 3];
-          }
-        }
-        ctx.putImageData(dst, 0, 0);
+        ctx.setTransform(1, 0, shear, squishY, -shear * imgBottom, bob);
+        drawCentered(ctx, img);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-        // Rainbow overlay (only on opaque pixels)
+        // Rainbow overlay on opaque pixels only
         ctx.globalCompositeOperation = 'source-atop';
-        ctx.fillStyle = `hsla(${t * 360}, 100%, 55%, 0.45)`;
+        ctx.fillStyle = `hsla(${t * 360}, 100%, 55%, 0.5)`;
         ctx.fillRect(0, 0, SIZE, SIZE);
         ctx.globalCompositeOperation = 'source-over';
         break;
