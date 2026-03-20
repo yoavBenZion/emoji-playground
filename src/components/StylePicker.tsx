@@ -12,7 +12,7 @@ export default function StylePicker({ value, onChange }: StylePickerProps) {
       <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
         Animation Style
       </h2>
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
         {STYLES.map((s) => (
           <button
             key={s.id}
