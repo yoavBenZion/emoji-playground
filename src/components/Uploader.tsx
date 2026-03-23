@@ -104,7 +104,11 @@ export default function Uploader({ onImage }: UploaderProps) {
                   disabled={bgRemoving}
                   className="text-sm px-3 py-1.5 rounded-lg bg-violet-600/20 hover:bg-violet-600/30 text-violet-300 border border-violet-600/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {bgRemoving ? `Removing bg… ${bgProgress}%` : '✂️ Remove Background'}
+                  {bgRemoving
+                    ? bgProgress < 30
+                      ? `Downloading model… ${bgProgress}%`
+                      : `Removing bg… ${bgProgress}%`
+                    : '✂️ Remove Background'}
                 </button>
               )}
 
