@@ -20,6 +20,7 @@ export default function Uploader({ onImage }: UploaderProps) {
   const [bgRemoving, setBgRemoving] = useState(false);
   const [bgProgress, setBgProgress] = useState(0);
   const [bgDone, setBgDone] = useState(false);
+  const [bgError, setBgError] = useState(false);
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -27,6 +28,7 @@ export default function Uploader({ onImage }: UploaderProps) {
     if (!file.type.startsWith('image/')) return;
     setSourceFile(file);
     setBgDone(false);
+    setBgError(false);
     const url = URL.createObjectURL(file);
     setPreview(url);
     const img = await loadImage(url);
@@ -50,6 +52,9 @@ export default function Uploader({ onImage }: UploaderProps) {
       setBgDone(true);
       const img = await loadImage(url);
       onImage(img);
+    } catch (err) {
+      console.error('BG removal failed:', err);
+      setBgError(true);
     } finally {
       setBgRemoving(false);
     }
@@ -93,7 +98,7 @@ export default function Uploader({ onImage }: UploaderProps) {
                 Replace
               </button>
 
-              {!bgDone && (
+              {!bgDone && !bgError && (
                 <button
                   onClick={handleRemoveBg}
                   disabled={bgRemoving}
@@ -107,6 +112,15 @@ export default function Uploader({ onImage }: UploaderProps) {
                 <span className="text-sm px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-600/40">
                   ✓ Background removed
                 </span>
+              )}
+
+              {bgError && (
+                <button
+                  onClick={() => { setBgError(false); handleRemoveBg(); }}
+                  className="text-sm px-3 py-1.5 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/40 transition-colors"
+                >
+                  ⚠️ Failed — tap to retry
+                </button>
               )}
             </div>
 
