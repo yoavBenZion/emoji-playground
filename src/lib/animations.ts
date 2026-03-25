@@ -283,31 +283,67 @@ export function generateFrames(
       }
 
       case 'explode': {
-        // Tiles fly outward from center: first third normal, then explode, then reform
-        const COLS = 4, ROWS = 4;
-        const tw = SIZE / COLS, th = SIZE / ROWS;
+        // 0–35%: image shakes/builds tension; 35–50%: white flash; 50–100%: debris particles arc out
+        if (t < 0.35) {
+          // build-up shake
+          const tension = t / 0.35;
+          const vib = Math.sin(t * Math.PI * 2 * 18) * SIZE * 0.015 * tension;
+          const scale = 1 + tension * 0.08;
+          ctx.save();
+          ctx.translate(SIZE / 2 + vib, SIZE / 2);
+          ctx.scale(scale, scale);
+          ctx.translate(-SIZE / 2, -SIZE / 2);
+          drawCentered(ctx, img);
+          ctx.restore();
+        } else if (t < 0.50) {
+          // flash: image fades to white
+          const flashT = (t - 0.35) / 0.15;
+          drawCentered(ctx, img);
+          ctx.save();
+          ctx.globalAlpha = flashT;
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, SIZE, SIZE);
+          ctx.restore();
+        } else {
+          // debris: colorful particles arc outward + fading image
+          const blastT = (t - 0.50) / 0.50;
+          // faint ghost of original fading out
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, 0.4 - blastT * 0.8);
+          ctx.translate(SIZE / 2, SIZE / 2);
+          ctx.scale(1 + blastT * 0.5, 1 + blastT * 0.5);
+          ctx.translate(-SIZE / 2, -SIZE / 2);
+          drawCentered(ctx, img);
+          ctx.restore();
 
-        const tmp2 = document.createElement('canvas');
-        tmp2.width = SIZE; tmp2.height = SIZE;
-        const tCtx2 = tmp2.getContext('2d')!;
-        drawCentered(tCtx2, img);
+          // shockwave ring
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, 0.6 - blastT);
+          ctx.strokeStyle = '#ffdd44';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(SIZE / 2, SIZE / 2, blastT * SIZE * 0.7, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
 
-        // ease: 0→0.3 calm, 0.3→0.7 explode, 0.7→1 reassemble
-        const explodeT = t < 0.3 ? 0 : t < 0.7 ? (t - 0.3) / 0.4 : 1 - (t - 0.7) / 0.3;
-        const eased    = explodeT * explodeT;
-
-        for (let row = 0; row < ROWS; row++) {
-          for (let col = 0; col < COLS; col++) {
-            const cx = (col - (COLS - 1) / 2);
-            const cy = (row - (ROWS - 1) / 2);
-            const dist = Math.sqrt(cx * cx + cy * cy);
-            const dx = cx / dist * eased * SIZE * 0.7;
-            const dy = cy / dist * eased * SIZE * 0.7;
-            const angle = Math.atan2(cy, cx) * eased * 0.6;
+          // debris particles
+          const PARTICLES = 18;
+          for (let p = 0; p < PARTICLES; p++) {
+            const seed  = Math.sin(p * 127.1) * 43758.5;
+            const frac  = seed - Math.floor(seed);
+            const angle2 = (p / PARTICLES) * Math.PI * 2 + frac * 0.8;
+            const speed = 0.4 + frac * 0.6;
+            const dist2 = blastT * speed * SIZE * 0.75;
+            const px    = SIZE / 2 + Math.cos(angle2) * dist2;
+            const py    = SIZE / 2 + Math.sin(angle2) * dist2 + blastT * blastT * SIZE * 0.1; // gravity
+            const sz    = (4 + frac * 6) * (1 - blastT * 0.6);
+            const hue   = Math.round(frac * 60 + 10); // orange→yellow range
             ctx.save();
-            ctx.translate(col * tw + tw / 2 + dx, row * th + th / 2 + dy);
-            ctx.rotate(angle);
-            ctx.drawImage(tmp2, col * tw, row * th, tw, th, -tw / 2, -th / 2, tw, th);
+            ctx.globalAlpha = Math.max(0, 1 - blastT * 1.2);
+            ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
+            ctx.beginPath();
+            ctx.arc(px, py, sz, 0, Math.PI * 2);
+            ctx.fill();
             ctx.restore();
           }
         }
@@ -407,49 +443,24 @@ export function generateFrames(
       }
 
       case 'onfire': {
-        // Image wobbles with heat distortion; fire gradient sweeps up; embers fly
-        const phase = t * Math.PI * 2;
-        // heat-shimmer: slight horizontal wave distortion using scanlines
-        const HSLICES = 20;
-        const hSliceH = SIZE / HSLICES;
-        const tmp4 = document.createElement('canvas');
-        tmp4.width = SIZE; tmp4.height = SIZE;
-        const tCtx4 = tmp4.getContext('2d')!;
-        drawCentered(tCtx4, img);
+        // Single fire emoji rises from bottom and engulfs the image, then recedes
+        const phase  = t * Math.PI * 2;
+        // fire pulses: small at t=0, fully engulfing at t=0.5, small again at t=1
+        const engulf = 0.5 - 0.5 * Math.cos(phase); // 0→1→0
 
-        for (let s = 0; s < HSLICES; s++) {
-          const shimmer = Math.sin(phase * 3 + s * 0.7) * SIZE * 0.025 * (1 - s / HSLICES);
-          const sy = s * hSliceH;
-          ctx.drawImage(tmp4, 0, sy, SIZE, hSliceH, shimmer, sy, SIZE, hSliceH);
-        }
+        // Draw image first
+        drawCentered(ctx, img);
 
-        // Fire gradient overlay: orange→red→transparent, oscillating height
-        const fireHeight = SIZE * (0.55 + 0.15 * Math.sin(phase * 2.3));
-        const grad2 = ctx.createLinearGradient(0, SIZE, 0, SIZE - fireHeight);
-        grad2.addColorStop(0,    'hsla(20,  100%, 55%, 0.85)');
-        grad2.addColorStop(0.35, 'hsla(35,  100%, 60%, 0.65)');
-        grad2.addColorStop(0.65, 'hsla(50,  100%, 65%, 0.30)');
-        grad2.addColorStop(1,    'hsla(60,  100%, 70%, 0)');
-        ctx.globalCompositeOperation = 'source-atop';
-        ctx.fillStyle = grad2;
-        ctx.fillRect(0, 0, SIZE, SIZE);
-        ctx.globalCompositeOperation = 'source-over';
-
-        // Random ember sparks
-        const sparkCount = 5;
-        for (let sp = 0; sp < sparkCount; sp++) {
-          const hash2 = Math.sin(sp * 91.3 + Math.floor(t * frameCount * 2) * 137.5) * 43758.5;
-          const frac2 = hash2 - Math.floor(hash2);
-          const sx2   = frac2 * SIZE;
-          const sy2   = SIZE - (((frac2 * 7 + t * 2) % 1) * SIZE * 0.8);
-          ctx.save();
-          ctx.globalAlpha = 0.8 * (1 - sy2 / SIZE);
-          ctx.fillStyle   = `hsl(${30 + frac2 * 30}, 100%, 65%)`;
-          ctx.beginPath();
-          ctx.arc(sx2, sy2, 2 + frac2 * 2, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
-        }
+        // Single 🔥 centered at the bottom, grows upward as engulf increases
+        // Size: starts small (~60% of canvas), grows to ~160% to fully cover
+        const fireSize = SIZE * (0.6 + engulf * 1.0);
+        ctx.save();
+        ctx.font         = `${Math.round(fireSize)}px serif`;
+        ctx.textAlign    = 'center';
+        ctx.textBaseline = 'bottom';
+        // anchor at bottom-center, slightly below canvas so base is always rooted
+        ctx.fillText('🔥', SIZE / 2, SIZE + fireSize * 0.15);
+        ctx.restore();
         break;
       }
     }
