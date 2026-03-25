@@ -1,7 +1,8 @@
 export type AnimationStyle =
   | 'party' | 'spin' | 'bounce' | 'shake' | 'zoom'
   | 'wobble' | 'float' | 'flip' | 'glitch' | 'tilt'
-  | 'rainbow' | 'orbit' | 'nod' | 'dizzy' | 'pop';
+  | 'rainbow' | 'orbit' | 'nod' | 'dizzy' | 'pop'
+  | 'poop' | 'explode' | 'rocket' | 'vibecheck' | 'melt' | 'onfire';
 
 export interface StyleMeta {
   id: AnimationStyle;
@@ -25,7 +26,13 @@ export const STYLES: StyleMeta[] = [
   { id: 'orbit',   emoji: '🪐', label: 'Orbit',   description: 'Circular drift'      },
   { id: 'nod',     emoji: '👆', label: 'Nod',     description: 'Double bob'          },
   { id: 'dizzy',   emoji: '🥴', label: 'Dizzy',   description: 'Woozy sway'          },
-  { id: 'pop',     emoji: '💥', label: 'Pop',     description: 'Staccato burst'      },
+  { id: 'pop',       emoji: '💥', label: 'Pop',       description: 'Staccato burst'      },
+  { id: 'poop',      emoji: '💩', label: 'Poop',      description: 'Becomes poop'         },
+  { id: 'explode',   emoji: '🧨', label: 'Explode',   description: 'Tiles fly apart'      },
+  { id: 'rocket',    emoji: '🚀', label: 'Rocket',    description: 'Launch to the moon'   },
+  { id: 'vibecheck', emoji: '🙅', label: 'Vibe Check',description: 'Hard head shake'      },
+  { id: 'melt',      emoji: '🫠', label: 'Melt',      description: 'Drip into puddle'     },
+  { id: 'onfire',    emoji: '🔥', label: 'On Fire',   description: 'Burning hot'          },
 ];
 
 export const SPEED_PRESETS = [
